@@ -4,13 +4,23 @@ export enum GenerationMode {
   ULTRA_EXPERT = 'Ultra Expert'
 }
 
-export type AppStage = 'initial' | 'analyzing' | 'questions' | 'generating' | 'results';
-export type ContentType = 'image' | 'story' | 'video';
+export type AppStage = 'initial' | 'analyzing' | 'questions' | 'generating' | 'story_review' | 'results';
+export type ContentType = 'image' | 'story' | 'video' | 'song';
 
 export interface Question {
   id: number;
   question_ar: string;
-  context_key: string; // e.g., 'art_style', 'character_details'
+  context_key: string; 
+  options: string[]; 
+}
+
+export interface VoiceProfile {
+  gender: string;
+  age_group: string;
+  tone_description_ar: string;
+  tone_description_en: string;
+  pitch: string;
+  speaking_style: string;
 }
 
 export interface CharacterProfile {
@@ -23,6 +33,7 @@ export interface CharacterProfile {
   style_guide: string;
   clothing_rules: string;
   visual_identity: string;
+  voice_profile: VoiceProfile;
 }
 
 export interface CharacterBible {
@@ -33,7 +44,7 @@ export interface LocationAsset {
   name_ar: string;
   name_en: string;
   description: string;
-  location_prompt: string; // Master prompt for the fixed location
+  location_prompt: string;
 }
 
 export interface Scene {
@@ -44,10 +55,10 @@ export interface Scene {
   visual_prompt_en: string;
   animation_prompt_ar: string;
   animation_prompt_en: string;
-  narration_ar: string; // New: Script for this scene
-  narration_en: string; // New: Script for this scene
-  transition_ar: string; // New: Transition to next scene
-  transition_en: string; // New: Transition to next scene
+  narration_ar: string;
+  narration_en: string;
+  transition_ar: string;
+  transition_en: string;
   technical_specs: {
     camera: string;
     lens: string;
@@ -58,8 +69,8 @@ export interface Scene {
 
 export interface StorybookOutput {
   story_title: string;
-  voiceover_tone_ar: string; // New: Overall tone
-  voiceover_tone_en: string; // New: Overall tone
+  voiceover_tone_ar: string;
+  voiceover_tone_en: string;
   scenes: Scene[];
 }
 
@@ -73,14 +84,49 @@ export interface VideoTrack {
 export interface VideoScene extends Scene {
   action_description_ar: string;
   action_description_en: string;
+  sound_style: string;
   tracks: VideoTrack;
 }
 
 export interface VideoOutput {
   video_title: string;
-  voiceover_tone_ar: string; // New
-  voiceover_tone_en: string; // New
+  voiceover_tone_ar: string;
+  voiceover_tone_en: string;
+  full_video_prompt_ar: string;
+  full_video_prompt_en: string;
   scenes: VideoScene[];
+}
+
+export interface SongSegment {
+  section_type: string;
+  lyrics_ar: string;
+  lyrics_en_transliteration: string;
+  musical_cues: string;
+  visual_description_ar: string;
+  visual_description_en: string;
+  visual_prompt_ar: string;
+  visual_prompt_en: string;
+  animation_prompt_ar: string;
+  animation_prompt_en: string;
+  transition_ar: string;
+  transition_en: string;
+  technical_specs: {
+    camera: string;
+    lens: string;
+    lighting: string;
+    aspect_ratio: string;
+  };
+}
+
+export interface SongOutput {
+  song_title: string;
+  genre_description: string;
+  music_generation_prompt: string;
+  consistent_audio_vibe_ar: string;
+  consistent_audio_vibe_en: string;
+  lyrics_structure: SongSegment[];
+  bpm: string;
+  instruments: string;
 }
 
 export interface CombinedResponse {
@@ -93,4 +139,17 @@ export interface CombinedResponse {
   location_assets: LocationAsset[]; 
   storybook: StorybookOutput;
   video: VideoOutput;
+  song: SongOutput;
+}
+
+export interface SavedProject {
+  id: string;
+  timestamp: number;
+  title: string;
+  concept: string;
+  contentType: ContentType;
+  response: CombinedResponse;
+  style: string;
+  ownerIp?: string;
+  browserId?: string; 
 }

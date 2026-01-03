@@ -1,19 +1,20 @@
+
 import React, { useState } from 'react';
 import { Scene, VideoScene } from '../types';
-import { EditableField } from './EditableField';
+import { AdvancedPromptEditor } from './AdvancedPromptEditor';
 import { EditableNarration } from './EditableNarration';
-import { PromptDisplay } from './PromptDisplay';
-import { ArrowLeft, ChevronDown, ChevronUp } from './Icons';
+import { ArrowLeft, ChevronDown } from './Icons';
 
 interface SceneCardProps {
   scene: Scene | VideoScene;
   type: 'storybook' | 'video';
+  index: number;
+  onUpdate?: (updatedScene: Scene | VideoScene) => void;
 }
 
-export const SceneCard: React.FC<SceneCardProps> = ({ scene, type }) => {
+export const SceneCard: React.FC<SceneCardProps> = ({ scene, type, index, onUpdate }) => {
   const [isOpen, setIsOpen] = useState(true);
 
-  // Helper to determine theme colors based on type
   const themeColor = type === 'storybook' ? 'emerald' : 'purple';
   const borderColor = type === 'storybook' ? 'border-emerald-500/30' : 'border-purple-500/30';
   const bgColor = type === 'storybook' ? 'bg-emerald-900/10' : 'bg-purple-900/10';
@@ -21,131 +22,159 @@ export const SceneCard: React.FC<SceneCardProps> = ({ scene, type }) => {
 
   const toggleOpen = () => setIsOpen(!isOpen);
 
-  // Type Guards or safe access
   const actionDescriptionAr = (scene as VideoScene).action_description_ar || (scene as Scene).description_ar;
   const actionDescriptionEn = (scene as VideoScene).action_description_en || (scene as Scene).description_en;
   
   const motionType = (scene as VideoScene).tracks?.motion_type;
-  const soundDirection = (scene as VideoScene).tracks?.sound_direction_en;
+  const soundStyle = (scene as VideoScene).sound_style;
+
+  const handleFieldSave = (field: string, newValue: string) => {
+    if (!onUpdate) return;
+    const updated = { ...scene, [field]: newValue };
+    onUpdate(updated);
+  };
 
   return (
-    <div className={`border ${borderColor} bg-slate-800/40 rounded-2xl overflow-hidden mb-6 transition-all hover:border-opacity-50`}>
-      {/* Header - Always Visible */}
+    <div 
+      className={`border ${borderColor} bg-slate-800/40 rounded-3xl overflow-hidden mb-6 transition-all hover:border-opacity-60 animate-slide-up relative z-10`}
+      style={{ animationDelay: `${index * 150}ms` }}
+    >
       <button 
         onClick={toggleOpen}
-        className={`w-full flex items-center justify-between p-5 ${bgColor} border-b border-slate-700/50 hover:bg-slate-800/60 transition-colors focus:outline-none focus:ring-2 focus:ring-inset focus:ring-${themeColor}-500`}
+        className={`w-full flex items-center justify-between p-5 ${bgColor} border-b border-slate-700/50 hover:bg-slate-800/60 transition-all duration-300 focus:outline-none relative overflow-hidden group`}
         aria-expanded={isOpen}
-        aria-controls={`scene-content-${scene.scene_number}`}
       >
-        <div className="flex items-center gap-4">
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-black text-xl bg-slate-900 border border-slate-700 ${textColor}`}>
+        <div className={`absolute inset-0 bg-gradient-to-r from-${themeColor}-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
+        
+        <div className="flex items-center gap-4 relative z-10">
+          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-2xl bg-slate-900 border border-slate-700 ${textColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
             {scene.scene_number}
           </div>
           <div className="text-right">
-             <h3 className={`font-bold text-lg text-white`}>
+             <h3 className={`font-bold text-lg text-white group-hover:${textColor} transition-colors`}>
                المشهد {scene.scene_number}
              </h3>
              {type === 'video' && (
-               <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Duration: Max 5s</span>
+               <span className="text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Video Asset Ready</span>
              )}
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 relative z-10">
            {motionType && (
-              <div className="hidden md:block bg-slate-900 px-3 py-1 rounded border border-slate-700 text-xs font-mono text-slate-300">
+              <div className="hidden md:block bg-slate-900 px-3 py-1 rounded-lg border border-slate-700 text-[10px] font-black text-slate-300 shadow-sm uppercase tracking-tighter">
                  {motionType}
               </div>
            )}
-           {isOpen ? <ChevronUp className="w-5 h-5 text-slate-400" /> : <ChevronDown className="w-5 h-5 text-slate-400" />}
+           <div className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`}>
+              <ChevronDown className="w-5 h-5 text-slate-400" />
+           </div>
         </div>
       </button>
 
-      {/* Collapsible Content */}
-      {isOpen && (
-        <div id={`scene-content-${scene.scene_number}`} className="p-6 animate-fade-in space-y-8">
-          
-          {/* Visual Description Split View */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {/* Arabic Column */}
-             <div className="space-y-2">
-                <div className="flex items-center gap-2 mb-2">
-                   <span className={`w-2 h-2 rounded-full bg-${themeColor}-500`}></span>
-                   <span className="text-xs font-bold text-slate-500 uppercase">الوصف (عربي)</span>
-                </div>
-                <div className="bg-slate-900/50 p-4 rounded-xl border-r-2 border-slate-700">
-                    <EditableField 
-                        initialValue={actionDescriptionAr} 
-                        multiline={true}
-                        className="text-lg text-slate-200 font-medium leading-relaxed" 
-                    />
-                </div>
-             </div>
-
-             {/* English Column */}
-             <div className="space-y-2" dir="ltr">
-                <div className="flex items-center gap-2 mb-2">
-                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
-                   <span className="text-xs font-bold text-slate-500 uppercase">Description (English)</span>
-                </div>
-                <div className="bg-slate-900/30 p-4 rounded-xl border-l-2 border-slate-700 text-left">
-                    <EditableField 
-                        initialValue={actionDescriptionEn} 
-                        multiline={true}
-                        className="text-sm text-slate-400 font-mono leading-relaxed" 
-                    />
-                </div>
-             </div>
-          </div>
-
-          {/* Sound Direction (Video Only) */}
-          {type === 'video' && soundDirection && (
-              <div className="bg-slate-950/30 p-4 rounded-xl border border-slate-800 flex items-start gap-4">
-                  <div className="bg-slate-800 p-2 rounded text-slate-400">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                  </div>
-                  <div>
-                      <span className="text-xs font-bold text-slate-500 uppercase block mb-1">Sound Direction</span>
-                      <p className="text-sm text-slate-300 font-mono" dir="ltr">{soundDirection}</p>
-                  </div>
-              </div>
-          )}
-
-          {/* Voiceover Script */}
-          <div className="pt-2">
-              <EditableNarration 
-                initialAr={scene.narration_ar} 
-                initialEn={scene.narration_en} 
-              />
-          </div>
-
-          {/* Prompts Section */}
-          <div className="space-y-4 pt-4 border-t border-slate-700/50">
-                <PromptDisplay label="VISUAL PROMPT (AR)" content={scene.visual_prompt_ar} isRtl={true} />
-                <PromptDisplay label="VISUAL PROMPT (EN)" content={scene.visual_prompt_en} />
-                <PromptDisplay label="ANIMATION PROMPT (Runway/Kling)" content={scene.animation_prompt_en} />
-          </div>
-
-          {/* Technical Specs Tags */}
-          <div className="flex flex-wrap gap-2 text-xs font-mono text-slate-500" dir="ltr">
-                <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800">Cam: {scene.technical_specs.camera}</span>
-                <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800">Lens: {scene.technical_specs.lens}</span>
-                <span className="bg-slate-900 px-3 py-1.5 rounded border border-slate-800">Light: {scene.technical_specs.lighting}</span>
-                <span className={`bg-slate-900 px-3 py-1.5 rounded border border-${themeColor}-900/50 text-${textColor}`}>AR: {scene.technical_specs.aspect_ratio}</span>
-          </div>
-
-          {/* Footer: Transitions */}
-          <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2 text-slate-400">
-                <ArrowLeft className={`w-4 h-4 ${textColor}`} />
-                <span className={`font-bold ${textColor}`}>الانتقال التالي:</span>
-                <span className="font-medium text-white">{scene.transition_ar}</span>
+      <div className={`grid-rows-transition ${isOpen ? 'grid-rows-1' : 'grid-rows-0'}`}>
+        <div className="overflow-hidden">
+          <div className="p-8 space-y-10">
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+               <AdvancedPromptEditor 
+                  label="وصف المشهد (عربي)" 
+                  initialValue={actionDescriptionAr} 
+                  isRtl={true} 
+                  type="descriptive"
+                  onSave={(val) => handleFieldSave(type === 'video' ? 'action_description_ar' : 'description_ar', val)}
+               />
+               <AdvancedPromptEditor 
+                  label="SCENE DESCRIPTION (EN)" 
+                  initialValue={actionDescriptionEn} 
+                  isRtl={false} 
+                  type="descriptive"
+                  onSave={(val) => handleFieldSave(type === 'video' ? 'action_description_en' : 'description_en', val)}
+               />
             </div>
-            <span className="font-mono text-xs text-slate-600 bg-slate-900 px-2 py-1 rounded">{scene.transition_en}</span>
-          </div>
 
+            {type === 'video' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-950/30 p-6 rounded-2xl border border-slate-800/50">
+                    <AdvancedPromptEditor 
+                      label="Sound Direction & Audio Style" 
+                      initialValue={soundStyle || "Cinematic Orchestra"} 
+                      type="technical"
+                      showAi={false}
+                      onSave={(val) => handleFieldSave('sound_style', val)}
+                    />
+                    <div className="flex flex-col justify-center">
+                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Technical Vibe</span>
+                        <div className="flex flex-wrap gap-2" dir="ltr">
+                           <span className="px-3 py-1 bg-purple-900/20 text-purple-400 rounded-lg border border-purple-500/20 text-[10px] font-bold">4K RESOLUTION</span>
+                           <span className="px-3 py-1 bg-blue-900/20 text-blue-400 rounded-lg border border-blue-500/20 text-[10px] font-bold">STABLE SHOT</span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="pt-2">
+                <EditableNarration 
+                  initialAr={scene.narration_ar} 
+                  initialEn={scene.narration_en} 
+                  onSave={(ar, en) => {
+                    if (onUpdate) onUpdate({ ...scene, narration_ar: ar, narration_en: en });
+                  }}
+                />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-slate-700/30">
+                <div className="space-y-4">
+                  <AdvancedPromptEditor 
+                    label="VISUAL PROMPT (AR)" 
+                    initialValue={scene.visual_prompt_ar} 
+                    isRtl={true} 
+                    onSave={(val) => handleFieldSave('visual_prompt_ar', val)}
+                  />
+                  <AdvancedPromptEditor 
+                    label="VISUAL PROMPT (EN)" 
+                    initialValue={scene.visual_prompt_en} 
+                    onSave={(val) => handleFieldSave('visual_prompt_en', val)}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <AdvancedPromptEditor 
+                    label="ANIMATION PROMPT (AR)" 
+                    initialValue={scene.animation_prompt_ar} 
+                    isRtl={true} 
+                    onSave={(val) => handleFieldSave('animation_prompt_ar', val)}
+                  />
+                  <AdvancedPromptEditor 
+                    label="ANIMATION PROMPT (EN)" 
+                    initialValue={scene.animation_prompt_en} 
+                    onSave={(val) => handleFieldSave('animation_prompt_en', val)}
+                  />
+                </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2 text-[10px] font-black uppercase text-slate-500" dir="ltr">
+                  <span className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800 tracking-tighter">CAMERA: {scene.technical_specs.camera}</span>
+                  <span className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800 tracking-tighter">LENS: {scene.technical_specs.lens}</span>
+                  <span className="bg-slate-900 px-4 py-2 rounded-xl border border-slate-800 tracking-tighter">LIGHT: {scene.technical_specs.lighting}</span>
+                  <span className={`bg-slate-900 px-4 py-2 rounded-xl border border-${themeColor}-500/20 text-${textColor} tracking-tighter`}>ASPECT: {scene.technical_specs.aspect_ratio}</span>
+            </div>
+
+            <div className="pt-6 relative">
+              <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-slate-700/50 to-transparent"></div>
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-3 text-slate-400">
+                    <div className={`p-2 rounded-xl ${type === 'storybook' ? 'bg-emerald-900/20 text-emerald-400' : 'bg-purple-900/20 text-purple-400'}`}>
+                       <ArrowLeft className="w-4 h-4" />
+                    </div>
+                    <div>
+                       <span className={`font-black ${textColor} block text-[10px] uppercase tracking-widest`}>الانتقال للمشهد التالي</span>
+                       <span className="font-bold text-slate-200">{scene.transition_ar}</span>
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

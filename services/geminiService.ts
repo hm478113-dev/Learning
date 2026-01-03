@@ -1,126 +1,44 @@
+
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { CombinedResponse, GenerationMode, Question, ContentType } from "../types";
 
 const ANALYSIS_SYSTEM_PROMPT = `
-You are the "Ultra Enterprise System - Analysis Module".
-Your goal is to analyze a user's initial creative concept (and any provided images) and generate 3-5 CRITICAL clarifying questions in ARABIC.
+You are the "Ultra Enterprise System - Visual Intelligence Module".
+Your primary function is to perform a deep forensic analysis of any uploaded images to extract a "Technical Visual Blueprint".
 
-Based on the User's selected Content Type (Image vs Story vs Video) AND the chosen Art Style, your questions must focus on specific technical aspects:
+IMAGE ANALYSIS RULES:
+- If images are provided, deconstruct them into: 
+  1. **Character DNA**: Precise facial structure, skin texture, hair flow, and distinct markings.
+  2. **Material Science**: Fabric types, surface reflections, and micro-details.
+  3. **Optical Blueprint**: Focal length, lighting direction, and color grading.
+- Generate questions in ARABIC to define character and detail transfer rules.
 
-IF IMAGE INPUT IS PROVIDED:
-- Analyze the style, characters, and mood of the uploaded images.
-- Ask questions to confirm if the user wants to maintain specific elements from these images (e.g., "Should the character keep the same clothing?", "Do you want to mimic this exact lighting?").
-
-IF IMAGE:
-- Ask about Camera Lens (Wide, Telephoto, Macro).
-- Ask about Lighting Style (Rembrandt, Neon, Natural).
-- Ask about Composition (Rule of thirds, Center).
-
-IF STORY:
-- Ask about the Narrative Arc (Ending, Conflict).
-- Ask about Character Development throughout the story.
-- Ask about the Setting changes.
-- **Check if it is a Dialogue Story**: If the concept implies conversation, ask about the interaction style between characters.
-
-IF VIDEO:
-- Ask about Camera Movement (Dolly zoom, Handheld, Drone).
-- Ask about Pacing (Slow motion, Fast cut).
-- Ask about Sound Design/Atmosphere.
-
-Output must be a JSON object containing an array of questions.
-Each question should be short, professional, and direct in Arabic.
+Output: JSON object matching the schema.
 `;
 
 const FINAL_SYSTEM_PROMPT = `
-You are the "Ultra Enterprise System Prompt" - Final Output Module.
-You operate in DUAL LANGUAGE: ARABIC (AR) and ENGLISH (EN).
+You are a "Master Visual Architect & Cinematic Director". Your mission is to generate production-ready prompts with 100% visual continuity and advanced LIP-SYNC SYNCHRONIZATION.
 
-MANDATORY RULES:
-1. Character Consistency: Create a "Character Bible" with a MASTER PROMPT for the main character. 
-   - **IF IMAGES ARE PROVIDED**: Use the images as the SOURCE OF TRUTH for the character's appearance (hair, eyes, clothing, style). Describe them EXACTLY as seen in the images.
-2. Location Consistency: Identify FIXED LOCATIONS (recurring places) and provide a MASTER PROMPT for each.
-   - **IF IMAGES ARE PROVIDED**: If the images depict a setting, use that as the base for the location prompts.
-3. Storybook Structure: 
-   - Divide story into SCENES.
-   - For EACH scene, provide an "Image Prompt" AND an "Animation Prompt".
-   - **TRANSITIONS**: For EACH scene, specify the "Transition" to the next scene (e.g., Fast Cut, Slow Fade, Dissolve, Wipe, Whip Pan). State this in both Arabic and English.
-   - **LIP-SYNC / DIALOGUE INTEGRATION**: 
-     - In the "animation_prompt_en", you MUST explicitly include the character's dialogue/narration: "Format: [Describe Motion]... Character [Name] speaking: '[English Text]'".
-     - In the "animation_prompt_ar", you MUST explicitly include the character's dialogue/narration: "Format: [Describe Motion]... الشخصية [الاسم] تتحدث: '[النص العربي]'".
-     - This is crucial for video generation tools to sync lip movement.
-   - **NARRATION OR DIALOGUE**: 
-     - **DEFAULT**: Provide a concise, emotional Voiceover Script (Narration). It should be SIMPLE and SHORT (one powerful sentence).
-     - **IF DIALOGUE STORY (قصة حوارية)**: If the user explicitly asks for a dialogue story or the concept implies it, format the 'narration' field STRICTLY as a dialogue script (e.g., "Character A: [Line]... Character B: [Line]...").
-     - The text must be sequential and tell a coherent story (AR & EN).
-4. Technical Depth: Define Camera, Lens, Lighting, ISO, Composition for every scene.
-5. Voiceover Tone: Define the specific tone/mood for the narrator/actors at the start.
-6. **Video Constraints**: 
-   - Ensure every scene action is designed to be **MAX 5 SECONDS** in duration.
-   - **CRITICAL FOR VIDEO**: The Narration/Voiceover text for each scene MUST be extremely short to fit within the 5-second limit (Maximum 10-12 words).
-7. **Style Adherence**: The generated prompts MUST strictly adhere to the User's selected Art Style.
+STRICT PRODUCTION RULES FOR PROMPTS:
 
-Input:
-- Initial Concept
-- Images (Optional visual reference)
-- Q&A History
-- Target Aspect Ratio
-- Target Art Style
-- Target Language
-- Target Dialect (if Arabic)
+1. **Visual Prompts (Static Forensic Foundation)**:
+   - **Extreme Detail**: Describe skin micro-texture, iris patterns, fabric weave density, and environmental atmospheric particles (volumetric dust, mist).
+   - **Lighting Protocol**: Define exact setups (e.g., "Rembrandt lighting with a 5600K key light and a subtle cyan rim light").
+   - **Optical Precision**: Specify lenses and f-stops (e.g., "85mm prime lens at f/1.8 for shallow depth of field").
+   - **Character DNA**: Explicitly carry over facial features from reference images into every prompt.
 
-Output:
-Strict JSON object matching the schema.
+2. **Animation Prompts (Hyper-Detailed Motion & Lip-Sync Mastery)**:
+   - **MANDATORY LIP-SYNC INTEGRATION**: The animation prompt MUST contain the exact text found in the "narration" field.
+   - **Technical Lip-Sync Command**: "High-fidelity lip-sync synchronization for the following spoken dialogue: '[EXACT NARRATION TEXT]'. Ensure precise mouth phoneme matching, realistic jaw displacement, synchronous tongue movements, and subtle cheek/neck muscle tension aligned with the emotional cadence of the speech."
+   - **Cinematic Motion**: Define camera paths (e.g., "Slow tracking dolly-in," "Dynamic arc shot at eye level").
+   - **Micro-Movements**: Include commands for eye blinks, pupil dilation, and forehead micro-expressions to mirror the speech energy.
+
+3. **Bilingual Professionalism**:
+   - **Arabic (AR)**: Use sophisticated technical cinematic and linguistic terms. Lip-sync must specify Arabic phoneme accuracy (e.g., "تزامن شفاه فائق الدقة لمخارج الحروف العربية للنص التالي: '...'").
+   - **English (EN)**: Use industry-standard technical keywords optimized for high-end models like Runway Gen-3 Alpha, Luma Dream Machine, Sora, and Kling.
+
+4. **Forensic Continuity**: Every prompt in a sequence must reinforce the "Visual DNA" to ensure characters and environments remain identical across the entire production.
 `;
-
-const REFINE_SYSTEM_PROMPT = `
-You are the "Ultra Enterprise System - Refinement Module".
-Your task is to EDIT and REFINE an existing "CombinedResponse" JSON object based on specific user instructions.
-
-INPUT:
-1. Current JSON Data (Character Bible, Scenes, etc.)
-2. User's Modification Request (e.g., "Change the main character to a robot", "Make the ending sadder", "Change lighting to Cyberpunk").
-
-RULES:
-1. **Maintain JSON Structure**: You MUST output the exact same JSON schema as the input. Do not add or remove top-level keys.
-2. **Apply Changes Intelligently**: 
-   - If the user changes a character feature, update the "Character Bible" AND ALL relevant Scene Prompts.
-   - If the user changes the setting, update "Location Assets" AND relevant Scene Prompts.
-   - If the user changes the style, update "Art Direction" and Technical Specs.
-   - If the user changes narration, rewrite the narration fields.
-3. **Preserve Unchanged Parts**: Do not randomly rewrite parts that are unrelated to the user's request.
-4. **Consistency**: Ensure the new changes are propagated consistently across English and Arabic fields.
-5. **Language**: Keep the output bilingual (AR/EN) as per the schema.
-
-Output:
-Strict JSON object matching the existing schema.
-`;
-
-const REWRITE_SYSTEM_PROMPT = `
-You are the "Ultra Enterprise System - Prompt Rewriter".
-Your task is to rewrite a specific prompt based on user instructions.
-Input: A single text prompt (Image Prompt, Animation Prompt, or Script).
-User Instruction: Specific change request (e.g., "Add rain", "Remove the cat", "Make it cinematic").
-Output: ONLY the rewritten prompt text. No JSON. No explanations.
-`;
-
-const QUESTIONS_SCHEMA: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    questions: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          id: { type: Type.INTEGER },
-          question_ar: { type: Type.STRING },
-          context_key: { type: Type.STRING },
-        },
-        required: ["id", "question_ar", "context_key"],
-      },
-    },
-  },
-  required: ["questions"],
-};
 
 const RESPONSE_SCHEMA: Schema = {
   type: Type.OBJECT,
@@ -151,8 +69,20 @@ const RESPONSE_SCHEMA: Schema = {
                 style_guide: { type: Type.STRING },
                 clothing_rules: { type: Type.STRING },
                 visual_identity: { type: Type.STRING },
+                voice_profile: {
+                  type: Type.OBJECT,
+                  properties: {
+                    gender: { type: Type.STRING },
+                    age_group: { type: Type.STRING },
+                    tone_description_ar: { type: Type.STRING },
+                    tone_description_en: { type: Type.STRING },
+                    pitch: { type: Type.STRING },
+                    speaking_style: { type: Type.STRING },
+                  },
+                  required: ["gender", "age_group", "tone_description_en"]
+                }
              },
-             required: ["name", "details_ar", "details_en", "character_prompt"]
+             required: ["name", "details_ar", "details_en", "character_prompt", "voice_profile"]
           }
         }
       },
@@ -166,7 +96,7 @@ const RESPONSE_SCHEMA: Schema = {
           name_ar: { type: Type.STRING },
           name_en: { type: Type.STRING },
           description: { type: Type.STRING },
-          location_prompt: { type: Type.STRING, description: "The master prompt to generate this location consistently" },
+          location_prompt: { type: Type.STRING },
         },
         required: ["name_ar", "name_en", "location_prompt"],
       },
@@ -175,8 +105,8 @@ const RESPONSE_SCHEMA: Schema = {
       type: Type.OBJECT,
       properties: {
         story_title: { type: Type.STRING },
-        voiceover_tone_ar: { type: Type.STRING, description: "The required tone for the narrator (Arabic)" },
-        voiceover_tone_en: { type: Type.STRING, description: "The required tone for the narrator (English)" },
+        voiceover_tone_ar: { type: Type.STRING },
+        voiceover_tone_en: { type: Type.STRING },
         scenes: {
           type: Type.ARRAY,
           items: {
@@ -187,12 +117,12 @@ const RESPONSE_SCHEMA: Schema = {
               description_en: { type: Type.STRING },
               visual_prompt_ar: { type: Type.STRING },
               visual_prompt_en: { type: Type.STRING },
-              animation_prompt_ar: { type: Type.STRING, description: "Must include 'الشخصية تتحدث: [Arabic Dialogue]' for lip-sync" },
-              animation_prompt_en: { type: Type.STRING, description: "Must include 'Character speaking: [English Dialogue]' for lip-sync" },
-              narration_ar: { type: Type.STRING, description: "The story script text (Narration OR Dialogue) for this scene (Arabic)" },
-              narration_en: { type: Type.STRING, description: "The story script text (Narration OR Dialogue) for this scene (English)" },
-              transition_ar: { type: Type.STRING, description: "The transition to the next scene (e.g. Fast Cut, Slow Fade)" },
-              transition_en: { type: Type.STRING, description: "The transition to the next scene in English" },
+              animation_prompt_ar: { type: Type.STRING },
+              animation_prompt_en: { type: Type.STRING },
+              narration_ar: { type: Type.STRING },
+              narration_en: { type: Type.STRING },
+              transition_ar: { type: Type.STRING },
+              transition_en: { type: Type.STRING },
               technical_specs: {
                 type: Type.OBJECT,
                 properties: {
@@ -215,6 +145,8 @@ const RESPONSE_SCHEMA: Schema = {
         video_title: { type: Type.STRING },
         voiceover_tone_ar: { type: Type.STRING },
         voiceover_tone_en: { type: Type.STRING },
+        full_video_prompt_ar: { type: Type.STRING },
+        full_video_prompt_en: { type: Type.STRING },
         scenes: {
           type: Type.ARRAY,
           items: {
@@ -225,12 +157,13 @@ const RESPONSE_SCHEMA: Schema = {
               action_description_en: { type: Type.STRING },
               visual_prompt_ar: { type: Type.STRING },
               visual_prompt_en: { type: Type.STRING },
-              animation_prompt_ar: { type: Type.STRING, description: "Must include 'الشخصية تتحدث: [Arabic Dialogue]' for lip-sync" },
-              animation_prompt_en: { type: Type.STRING, description: "Must include 'Character speaking: [English Dialogue]' for lip-sync" },
+              animation_prompt_ar: { type: Type.STRING },
+              animation_prompt_en: { type: Type.STRING },
               narration_ar: { type: Type.STRING },
               narration_en: { type: Type.STRING },
-              transition_ar: { type: Type.STRING, description: "The transition to the next scene (e.g. Fast Cut, Slow Fade)" },
-              transition_en: { type: Type.STRING, description: "The transition to the next scene in English" },
+              transition_ar: { type: Type.STRING },
+              transition_en: { type: Type.STRING },
+              sound_style: { type: Type.STRING },
               technical_specs: {
                 type: Type.OBJECT,
                 properties: {
@@ -250,14 +183,80 @@ const RESPONSE_SCHEMA: Schema = {
                 },
               },
             },
-            required: ["scene_number", "narration_ar", "narration_en", "transition_ar", "animation_prompt_ar", "animation_prompt_en"],
+            required: ["scene_number", "narration_ar", "narration_en", "transition_ar", "animation_prompt_ar", "animation_prompt_en", "sound_style"],
           },
         },
       },
-      required: ["scenes", "voiceover_tone_ar", "voiceover_tone_en"],
+      required: ["scenes", "voiceover_tone_ar", "voiceover_tone_en", "full_video_prompt_ar", "full_video_prompt_en"],
+    },
+    song: {
+      type: Type.OBJECT,
+      properties: {
+        song_title: { type: Type.STRING },
+        genre_description: { type: Type.STRING },
+        music_generation_prompt: { type: Type.STRING },
+        consistent_audio_vibe_ar: { type: Type.STRING },
+        consistent_audio_vibe_en: { type: Type.STRING },
+        bpm: { type: Type.STRING },
+        instruments: { type: Type.STRING },
+        lyrics_structure: {
+          type: Type.ARRAY,
+          items: {
+             type: Type.OBJECT,
+             properties: {
+                section_type: { type: Type.STRING },
+                lyrics_ar: { type: Type.STRING },
+                lyrics_en_transliteration: { type: Type.STRING },
+                musical_cues: { type: Type.STRING },
+                visual_description_ar: { type: Type.STRING },
+                visual_description_en: { type: Type.STRING },
+                visual_prompt_ar: { type: Type.STRING },
+                visual_prompt_en: { type: Type.STRING },
+                animation_prompt_ar: { type: Type.STRING },
+                animation_prompt_en: { type: Type.STRING },
+                transition_ar: { type: Type.STRING },
+                transition_en: { type: Type.STRING },
+                technical_specs: {
+                    type: Type.OBJECT,
+                    properties: {
+                        camera: { type: Type.STRING },
+                        lens: { type: Type.STRING },
+                        lighting: { type: Type.STRING },
+                        aspect_ratio: { type: Type.STRING },
+                    }
+                }
+             },
+             required: ["section_type", "lyrics_ar", "musical_cues", "visual_description_ar", "visual_description_en", "visual_prompt_ar", "visual_prompt_en", "animation_prompt_ar", "animation_prompt_en", "transition_ar", "technical_specs"]
+          }
+        }
+      },
+      required: ["song_title", "music_generation_prompt", "lyrics_structure", "consistent_audio_vibe_ar", "consistent_audio_vibe_en"]
+    }
+  },
+  required: ["analysis", "character_bible", "storybook", "video", "song"],
+};
+
+const QUESTIONS_SCHEMA: Schema = {
+  type: Type.OBJECT,
+  properties: {
+    questions: {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.INTEGER },
+          question_ar: { type: Type.STRING },
+          context_key: { type: Type.STRING },
+          options: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+          },
+        },
+        required: ["id", "question_ar", "context_key", "options"],
+      },
     },
   },
-  required: ["analysis", "character_bible", "storybook", "video"],
+  required: ["questions"],
 };
 
 export interface ImageData {
@@ -265,7 +264,6 @@ export interface ImageData {
     data: string;
 }
 
-// Step 1: Analyze and Ask Questions
 export const generateAnalysisQuestions = async (
   concept: string,
   mode: GenerationMode,
@@ -278,27 +276,20 @@ export const generateAnalysisQuestions = async (
   const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
-    Analyze this concept: "${concept}"
-    Mode: ${mode}
-    Target Content Type: ${contentType}
-    Preferred Art Style: ${style}
-    
-    ${images.length > 0 ? `I have uploaded ${images.length} reference images. Please assume these images depict key characters, settings, or styles I want to use in my story.` : ''}
-
-    The user wants to generate high-end visual content.
-    What information is missing to achieve a perfect "${style}" look for a ${contentType}?
-    Generate 3 to 5 questions in Arabic to clarify the details suited for this specific style and content type.
+    Elite Visual Analysis Task:
+    Creative Concept: "${concept}"
+    Reference Images Provided: ${images.length}
+    Objective: Extract specific visual details from images to ensure perfect transfer and continuity.
   `;
 
-  // Construct parts with text and images
   const parts: any[] = [{ text: prompt }];
   images.forEach(img => {
       parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: [{ role: 'user', parts: parts }],
+    model: "gemini-3-flash-preview",
+    contents: { parts: parts },
     config: {
       systemInstruction: ANALYSIS_SYSTEM_PROMPT,
       responseMimeType: "application/json",
@@ -310,7 +301,6 @@ export const generateAnalysisQuestions = async (
   return parsed.questions || [];
 };
 
-// Step 2: Generate Final Output
 export const generateUltraPrompt = async (
   concept: string,
   answers: Record<string, string>,
@@ -321,121 +311,79 @@ export const generateUltraPrompt = async (
   targetDialect: string,
   targetTransition: string,
   storyType: string,
-  images: ImageData[] = []
+  images: ImageData[] = [],
+  videoFormat: string = 'standard',
+  videoResolution: string = '4K',
+  musicGenre: string = 'Automatic'
 ): Promise<CombinedResponse> => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) throw new Error("API_KEY is missing");
   const ai = new GoogleGenAI({ apiKey });
 
-  // Format Q&A for the prompt
-  const qaString = Object.entries(answers)
-    .map(([q, a]) => `Q: ${q}\nA: ${a}`)
-    .join("\n\n");
+  const qaString = Object.entries(answers).map(([q, a]) => `Detail Mapping: ${q} -> Source Value: ${a}`).join("\n");
 
   const userPrompt = `
-    EXECUTE PHASE 2 OUTPUT GENERATION.
-    
-    MODE: ${mode}
-    REQUIRED ASPECT RATIO: ${aspectRatio}
-    REQUIRED ART STYLE: ${style}
-    PREFERRED TRANSITION STYLE: ${targetTransition}
-    TARGET NARRATION LANGUAGE: ${targetLanguage}
-    TARGET DIALECT (If Arabic): ${targetDialect}
-    REQUIRED STORY TYPE: ${storyType}
-    
-    INITIAL CONCEPT:
-    ${concept}
-    
-    ${images.length > 0 ? `VISUAL REFERENCES: I have attached ${images.length} images. Use these as the primary reference for Character appearance and Environment visual style.` : ''}
-
-    CLARIFICATION Q&A HISTORY:
+    COMMAND: INITIATE PRODUCTION PHASE.
+    CORE CONCEPT: ${concept}
+    OBJECTIVE: Perform professional "Style & Detail Transfer" from provided images with advanced forensic LIP-SYNC and hyper-detailed CINEMATIC logic.
     ${qaString}
-
-    Task:
-    1. Create a definitive Character Bible with a Master Prompt.
-    2. Identify Fixed Locations and write Master Prompts for them.
-    3. Generate Storybook & Video prompts (Arabic & English) with Animation Prompts for every scene.
-    4. Write the Voiceover/Narration Script (Ar & En) for each scene. 
-       - **CRITICAL**: The 'narration_ar' MUST be written in the **${targetDialect}** dialect if the target language is Arabic. (e.g., if Egyptian, use words like "يا صاحبي", "ده", "كده").
-       - **STORY TYPE ENFORCEMENT**:
-         - IF "dialogue": Format the text STRICTLY as a dialogue script (e.g., "Character A: [Line]... Character B: [Line]"). The scene MUST focus on interaction.
-         - IF "narrative": Use concise, emotional narration (short sentences) describing the scene/feelings.
-       - **FOR VIDEO**: Keep narration VERY SHORT (max 10-12 words) to fit the 5-second scene duration.
-    5. Define the Voiceover Tone.
-    6. ENSURE the Aspect Ratio "${aspectRatio}" is correctly labelled in the technical specs for ALL scenes.
-    7. **FOR VIDEO CONTENT**: Ensure every scene action is designed to be **MAX 5 SECONDS** in duration.
-    8. **TRANSITIONS**: Use "${targetTransition}" as the primary transition style between scenes, unless the narrative demands a specific effect (e.g. Fade Out at the end).
-    9. **STYLE ENFORCEMENT**: Ensure all visual descriptions strictly match the "${style}" aesthetic.
-    10. **LIP-SYNC IN ANIMATION PROMPT**: 
-        - Ensure the English Animation Prompt includes "Character speaking: '[English Dialogue]'"
-        - Ensure the Arabic Animation Prompt includes "الشخصية تتحدث: '[Arabic Dialogue]'"
-        so the lips move in sync with the narration in either language.
   `;
 
-  // Construct parts with text and images
   const parts: any[] = [{ text: userPrompt }];
   images.forEach(img => {
       parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
   });
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: [{ role: 'user', parts: parts }],
+    model: "gemini-3-pro-preview",
+    contents: { parts: parts },
     config: {
       systemInstruction: FINAL_SYSTEM_PROMPT,
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
-      temperature: 0.7,
-      thinkingConfig: mode === GenerationMode.ULTRA_EXPERT ? { thinkingBudget: 1024 } : undefined,
+      temperature: 0.8,
+      thinkingConfig: { thinkingBudget: 4096 },
     },
   });
 
-  const text = response.text;
-  if (!text) throw new Error("No response from Gemini");
-
-  return JSON.parse(text) as CombinedResponse;
+  return JSON.parse(response.text || "{}") as CombinedResponse;
 };
 
-// Step 3: Refine Existing Output
 export const refineUltraPrompt = async (
   currentResponse: CombinedResponse,
-  refinementInstruction: string
+  refinementInstruction: string,
+  images: ImageData[] = [] 
 ): Promise<CombinedResponse> => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) throw new Error("API_KEY is missing");
   const ai = new GoogleGenAI({ apiKey });
 
-  const prompt = `
-    CURRENT DATA (JSON):
-    ${JSON.stringify(currentResponse)}
-
-    USER INSTRUCTION (Change Request):
-    "${refinementInstruction}"
-
-    TASK:
-    Update the JSON data to satisfy the User Instruction.
-    Ensure all prompts (Image, Animation, Character) are updated to reflect the change.
-    Maintain strict consistency.
+  const promptText = `
+    REFINEMENT COMMAND:
+    INSTRUCTION: "${refinementInstruction}"
+    Action: Perform surgery on existing prompts. Enforce forensic-level detail, strict Lip-Sync synchronization, and cinematic polishing in both AR and EN.
+    CURRENT DATA: ${JSON.stringify(currentResponse)}
   `;
 
+  const parts: any[] = [{ text: promptText }];
+  images.forEach(img => {
+      parts.push({ inlineData: { mimeType: img.mimeType, data: img.data } });
+  });
+
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    model: "gemini-3-pro-preview",
+    contents: { parts: parts },
     config: {
-      systemInstruction: REFINE_SYSTEM_PROMPT,
+      systemInstruction: FINAL_SYSTEM_PROMPT,
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
-      temperature: 0.7,
+      thinkingConfig: { thinkingBudget: 2048 },
     },
   });
 
-  const text = response.text;
-  if (!text) throw new Error("No response from Gemini");
-
-  return JSON.parse(text) as CombinedResponse;
+  return JSON.parse(response.text || "{}") as CombinedResponse;
 };
 
-// Step 4: Rewrite Single Prompt
 export const rewriteSinglePrompt = async (
   currentText: string,
   instruction: string
@@ -444,21 +392,11 @@ export const rewriteSinglePrompt = async (
   if (!apiKey) throw new Error("API_KEY is missing");
   const ai = new GoogleGenAI({ apiKey });
 
-  const prompt = `
-    CURRENT PROMPT:
-    "${currentText}"
-
-    USER INSTRUCTION:
-    "${instruction}"
-
-    REWRITE THE PROMPT:
-  `;
-
   const response = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: [{ role: 'user', parts: [{ text: prompt }] }],
+    model: "gemini-3-flash-preview",
+    contents: `PROMPT: "${currentText}"\nINSTRUCTION: "${instruction}"`,
     config: {
-      systemInstruction: REWRITE_SYSTEM_PROMPT,
+      systemInstruction: "Upgrade this prompt to forensic professional standards. Preserve visual DNA and strictly optimize for technical detail and lip-sync synchronization by embedding narration where applicable.",
     },
   });
 

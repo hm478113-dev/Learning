@@ -1,7 +1,8 @@
+
 import { GenerationMode } from './types';
 
 export const APP_NAME = "ULTRA PROMPT // SYSTEM";
-export const APP_VERSION = "v2.5.0";
+export const APP_VERSION = "v2.7.0";
 
 export const DEFAULT_FORM_DATA = {
   concept: "",
@@ -20,7 +21,7 @@ export const LANGUAGES = [
   { id: 'en', label: 'الإنجليزية (English)' },
 ];
 
-export const DIALECTS = [
+export const ARABIC_DIALECTS = [
   { id: 'msa', label: 'الفصحى (Modern Standard Arabic)' },
   { id: 'egyptian', label: 'المصرية (Egyptian)' },
   { id: 'saudi', label: 'السعودية (Saudi)' },
@@ -30,12 +31,23 @@ export const DIALECTS = [
   { id: 'iraqi', label: 'العراقية (Iraqi)' },
 ];
 
+export const ENGLISH_DIALECTS = [
+  { id: 'us', label: 'الأمريكية (American English)' },
+  { id: 'uk', label: 'البريطانية (British English)' },
+];
+
 export const ASPECT_RATIOS = [
   { id: "16:9", label: "سينمائي أفقي (16:9) - YouTube/Movies" },
   { id: "9:16", label: "طولي (9:16) - Reels/TikTok/Shorts" },
   { id: "1:1", label: "مربع (1:1) - Instagram Post" },
   { id: "4:3", label: "تلفزيوني كلاسيكي (4:3)" },
   { id: "2.39:1", label: "شاشة عريضة جداً (2.39:1) - Epic Cinema" }
+];
+
+export const VIDEO_RESOLUTIONS = [
+  { id: '1080p', label: 'Full HD (1080p)' },
+  { id: '4K', label: 'Ultra HD (4K)' },
+  { id: '8K', label: '8K Resolution' },
 ];
 
 export const TRANSITION_STYLES = [
@@ -50,6 +62,25 @@ export const TRANSITION_STYLES = [
 export const STORY_TYPES = [
   { id: 'narrative', label: 'قصة سردية (Narrative)' },
   { id: 'dialogue', label: 'قصة حوارية (Dialogue)' },
+];
+
+export const VIDEO_FORMATS = [
+  { id: 'standard', label: 'فيديو عادي (Standard Video)' },
+  { id: 'reels', label: 'ريلز / تيك توك (Reels / Shorts)' },
+];
+
+export const MUSIC_GENRES = [
+  { id: "Automatic", label: "تلقائي (Automatic) - AI Choice" },
+  { id: "Pop", label: "بوب (Pop)" },
+  { id: "Cinematic Orchestral", label: "أوركسترا سينمائية (Cinematic)" },
+  { id: "Hip Hop / Rap", label: "هيب هوب / راب (Hip Hop)" },
+  { id: "Electronic / EDM", label: "إلكتروني (EDM)" },
+  { id: "Acoustic Folk", label: "أكوستيك (Acoustic)" },
+  { id: "Arabic Pop", label: "بوب عربي (Arabic Pop)" },
+  { id: "Khaleeji", label: "خليجي (Khaleeji)" },
+  { id: "Shaabi", label: "شعبي مصري (Shaabi)" },
+  { id: "Lo-Fi", label: "لو-فاي (Lo-Fi)" },
+  { id: "Rock", label: "روك (Rock)" }
 ];
 
 export const CONTENT_STYLES = {
@@ -85,5 +116,14 @@ export const CONTENT_STYLES = {
     { id: "Drone Footage", label: "تصوير جوي (Drone)", desc: "لقطات واسعة من الأعلى، حركية" },
     { id: "GoPro Action", label: "حركة سريعة (Action Cam)", desc: "زاوية واسعة جداً، منظور الشخص الأول" },
     { id: "Slow Motion", label: "حركة بطيئة (Slow Motion)", desc: "تركيز على التفاصيل، درامي" }
+  ],
+  song: [
+    { id: "3D Pixar", label: "فيديو كليب كرتوني (3D Pixar Style)", desc: "شخصيات لطيفة، رسوم متحركة 3D للأطفال أو المرح" },
+    { id: "Cinematic Music Video", label: "فيديو كليب سينمائي (Cinematic)", desc: "إضاءة درامية، تصوير احترافي، جودة عالية" },
+    { id: "Neon/Cyberpunk", label: "نيون / سايبر بانك (Neon)", desc: "أضواء ساطعة، أجواء ليلية، مناسب للراب أو الإلكتروني" },
+    { id: "Anime Style", label: "أنمي (Anime)", desc: "رسوم متحركة يابانية، حركة سريعة، ألوان زاهية" },
+    { id: "Abstract Visuals", label: "تجريدي (Abstract)", desc: "أشكال هندسية، ألوان تتحرك مع الإيقاع، غير قصصي" },
+    { id: "Vintage/Retro", label: "كلاسيكي قديم (Vintage)", desc: "أجواء الثمانينات أو التسعينات، فلتر قديم" },
+    { id: "Realistic Performance", label: "أداء واقعي (Realistic)", desc: "تركيز على المغني وهو يؤدي الأغنية في مكان واقعي" }
   ]
 };
